@@ -1136,7 +1136,14 @@ class ServiceBroker {
 				return endpoint;
 			} else {
 				// Get endpoint list by action name
-				const epList = this.registry.getActionEndpoints(actionName);
+				// const epList = this.registry.getActionEndpoints(actionName);
+				const parsed = actionName.split(".").reverse();
+				if ( ctx.meta.requestVersion && parsed.length==2 )
+					parsed.push(ctx.meta.requestVersion);
+				const epList = this.getActionEndpoints(parsed);
+				ctx.meta.requestVersion = parsed[2] || "";
+				ctx.meta.handler = epList.name;
+				console.log(epList.name);
 				if (!epList) {
 					this.logger.warn(`Service '${actionName}' is not registered.`);
 					return new E.ServiceNotFoundError({ action: actionName });
@@ -1145,13 +1152,38 @@ class ServiceBroker {
 				// Get the next available endpoint
 				const endpoint = epList.next(ctx);
 				if (!endpoint) {
-					const errMsg = `Service '${actionName}' is not available.`;
+					const errMsg = `${epList.name} found, but service '${actionName}' is not available.`;
 					this.logger.warn(errMsg);
 					return new E.ServiceNotAvailableError({ action: actionName });
 				}
 				return endpoint;
 			}
 		}
+	}
+
+	getActionEndpoints(p1) {
+		const matched = [];
+		for (let [key, endpoint] of this.registry.actions.actions) {
+			if ( !endpoint.hasAvailable() ) continue;
+			const p2 = key.split(".").reverse();
+			if ( p1[0]==p2[0] && p1[1]==p2[1] ) {
+				if ( p1[2]==p2[2] ) {
+					return endpoint;
+				}
+				matched.push({
+					parsed: p2,
+					endpoint
+				});
+			}
+		}
+		if ( !matched.length ) return false;
+		const priority = this.options.versionPriority || ["production", "staging"];
+		for ( let i=0; i<priority.length; i++ ) {
+			const match = matched.find(m => m.parsed[2]==priority[i])
+			if ( match )
+				return match.endpoint;
+		}
+		return matched[0].endpoint;
 	}
 
 	/**
