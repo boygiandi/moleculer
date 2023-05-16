@@ -1167,7 +1167,7 @@ class ServiceBroker {
 			if ( !endpoint.hasAvailable() ) continue;
 			const p2 = key.split(".").reverse();
 			if ( p1[0]==p2[0] && p1[1]==p2[1] ) {
-				if ( p1[2]==p2[2] ) {
+				if ( p1[2] && p1[2]==p2[2] ) {
 					return endpoint;
 				}
 				matched.push({
