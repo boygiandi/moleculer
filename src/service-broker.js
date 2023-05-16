@@ -1142,7 +1142,7 @@ class ServiceBroker {
 					parsed.push(ctx.meta.requestVersion);
 				const epList = this.getActionEndpoints(parsed);
 				ctx.meta.requestVersion = parsed[2] || "";
-				ctx.meta.handler = epList.name;
+				ctx.meta.handler = ctx.meta.requestVersion+'-'+epList.name;
 				console.log(epList.name);
 				if (!epList) {
 					this.logger.warn(`Service '${actionName}' is not registered.`);
